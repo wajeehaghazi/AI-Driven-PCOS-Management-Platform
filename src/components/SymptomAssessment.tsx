@@ -7,8 +7,11 @@ export function SymptomAssessment() {
   }]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const handleSend = () => {
+  const [sessionId, setSessionId] = useState('');
+
+  const handleSend = async () => {
     if (input.trim() === '') return;
+    
     // Add user message
     const newMessages = [...messages, {
       sender: 'user',
@@ -16,24 +19,77 @@ export function SymptomAssessment() {
     }];
     setMessages(newMessages);
     setInput('');
-    // Simulate AI thinking
     setIsTyping(true);
-    // Simulate AI response after a delay
-    setTimeout(() => {
-      let aiResponse;
-      if (newMessages.length === 2) {
-        aiResponse = "Thank you for sharing. Based on what you've described, I'd like to ask a few follow-up questions to better understand your situation. Have you noticed any irregularities in your menstrual cycle? If so, could you describe the pattern?";
-      } else if (newMessages.length === 4) {
-        aiResponse = "I understand. Irregular periods can be a key indicator of PCOS. I'd also like to know if you've experienced any of these other common symptoms: unwanted hair growth (hirsutism), acne, weight gain especially around the abdomen, or thinning hair on the scalp?";
-      } else {
-        aiResponse = "Thank you for providing this information. Based on the symptoms you've described, there are several indicators that align with PCOS patterns. I recommend discussing these symptoms with a healthcare provider for proper diagnosis. Would you like me to provide some information about next steps or explain more about how these symptoms relate to PCOS?";
+
+    try {
+      const formData = new FormData();
+      formData.append('input', input);
+      if (sessionId) {
+        formData.append('session_id', sessionId);
       }
-      setMessages([...newMessages, {
+
+      const response = await fetch('https://e3ce59055b02.ngrok-free.app/chat', {
+        method: 'POST',
+        body: formData,
+        mode: 'cors',
+        headers: {
+          'Accept': 'text/event-stream',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) return;
+
+      let fullResponse = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = new TextDecoder().decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'chunk') {
+                fullResponse += data.content;
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  if (newMessages.length > 0 && newMessages[newMessages.length - 1].sender === 'ai') {
+                    newMessages[newMessages.length - 1].content = fullResponse;
+                  } else {
+                    newMessages.push({ sender: 'ai', content: fullResponse });
+                  }
+                  return newMessages;
+                });
+                
+                if (!sessionId && data.session_id) {
+                  setSessionId(data.session_id);
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing SSE data:', e);
+            }
+          }
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error:', error);
+      setMessages(prev => [...prev, {
         sender: 'ai',
-        content: aiResponse
+        content: "I apologize, but I encountered an error. Please try again."
       }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
