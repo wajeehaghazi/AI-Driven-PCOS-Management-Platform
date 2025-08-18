@@ -1,0 +1,15 @@
+flask
+python-dotenv
+flask-cors
+langchain
+langchain-community
+langchain-core
+langchain-groq
+langchain-text-splitters
+faiss-cpu
+torch
+torchvision
+Pillow
+numpy
+google-generativeai
+langchain-google-genai

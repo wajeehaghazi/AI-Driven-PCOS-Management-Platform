@@ -1,7 +1,7 @@
 import React from 'react';
 import { UltrasoundAnalysis } from '../components/UltrasoundAnalysis';
 import { SymptomAssessment } from '../components/SymptomAssessment';
-import { ChevronDownIcon, ActivityIcon, BrainIcon, HeartIcon, LineChartIcon, BookOpenIcon, SparklesIcon, ShieldIcon } from 'lucide-react';
+import { ChevronDownIcon, ActivityIcon, BrainIcon, HeartIcon, SparklesIcon, ShieldIcon } from 'lucide-react';
 export function LandingPage() {
   return <div className="w-full">
       {/* Hero Section */}
@@ -132,78 +132,7 @@ export function LandingPage() {
                 </svg>
               </a>
             </div>
-            {/* Feature 4 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-teal-100 group">
-              <div className="bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <LineChartIcon size={28} className="text-white" />
-              </div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 group-hover:text-cyan-600 transition-colors duration-300">
-                Continuous Monitoring & Support
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Track symptoms with natural language input, analyze progress
-                patterns, and receive adaptive recommendations based on your
-                journey.
-              </p>
-              <a href="#monitoring" className="inline-flex items-center font-medium text-cyan-600 hover:text-cyan-800 transition-colors">
-                Learn more
-                <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </a>
-            </div>
-            {/* Feature 5 */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-teal-100 group">
-              <div className="bg-gradient-to-r from-teal-500 to-cyan-500 rounded-2xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                <BookOpenIcon size={28} className="text-white" />
-              </div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 group-hover:text-teal-600 transition-colors duration-300">
-                Educational Companion
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Engage in interactive Q&A about PCOS, get evidence-based
-                information that busts common myths, and benefit from community
-                insights.
-              </p>
-              <a href="#education" className="inline-flex items-center font-medium text-teal-600 hover:text-teal-800 transition-colors">
-                Learn more
-                <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </a>
-            </div>
-            {/* Architecture Card */}
-            <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-blue-100 group">
-              <div className="bg-gradient-to-r from-blue-600 to-teal-600 text-white px-4 py-2 rounded-lg inline-block mb-4 font-medium">
-                Advanced Technology
-              </div>
-              <h3 className="text-2xl font-semibold text-gray-900 mb-4 group-hover:text-teal-600 transition-colors duration-300">
-                Medically-Informed AI Architecture
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Our system combines Retrieval Augmented Generation with advanced
-                AI to provide accurate, personalized, and medically-sound
-                information.
-              </p>
-              <div className="bg-white p-5 rounded-xl shadow-inner text-sm font-mono text-gray-700 border border-teal-100 group-hover:border-teal-200 transition-colors">
-                <div className="flex items-center mb-2">
-                  <div className="w-3 h-3 bg-red-400 rounded-full mr-2"></div>
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></div>
-                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                </div>
-                <p className="mb-1">
-                  User Query <span className="text-teal-500">→</span> Vector
-                  Search <span className="text-teal-500">→</span> Context
-                </p>
-                <p className="mb-1 text-teal-500">↓</p>
-                <p className="mb-1">
-                  Medical KB + Context <span className="text-teal-500">→</span>{' '}
-                  AI Analysis
-                </p>
-                <p className="mb-1 text-teal-500">↓</p>
-                <p>Personalized Response + Citations</p>
-              </div>
-            </div>
+
           </div>
         </div>
       </section>

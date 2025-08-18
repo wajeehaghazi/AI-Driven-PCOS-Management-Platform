@@ -17,7 +17,14 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from embedding import load_embeddings
 from langchain_groq import ChatGroq
+
+import torch
+import torch.nn as nn
+from torchvision import models, transforms
+from PIL import Image
+import io
 # Configure logging
+
 def setup_logging():
     """Set up comprehensive logging configuration"""
     # Create logs directory if it doesn't exist
@@ -224,10 +231,10 @@ except Exception as e:
 # Initialize session storage
 sessions = {}
 
-@app.route('/')
-def index():
-    logger.info("Serving index page")
-    return render_template('test.html')
+# @app.route('/')
+# def index():
+#     logger.info("Serving index page")
+#     return render_template('test.html')
 
 @app.route('/chat', methods=['POST'])
 @log_request_time
@@ -351,6 +358,65 @@ def chat():
             'chat_history': sessions.get(session_id, [])
         }), 500
 
+MODEL_PATH = "pcos_classifier_resnet50.pth"   # <-- make sure this file exists
+CLASSES = ["infected", "noninfected"]
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Load Model Once
+def load_classifier():
+    model = models.resnet50(pretrained=False)
+    model.fc = nn.Linear(model.fc.in_features, len(CLASSES))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+    model.to(DEVICE)
+    model.eval()
+    return model
+
+classifier_model = load_classifier()
+
+# Transform for input images
+img_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406],
+                         [0.229, 0.224, 0.225]),
+])
+
+@app.route("/predict", methods=["POST"])
+@log_request_time
+def predict():
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "Empty filename"}), 400
+
+    try:
+        # Preprocess image
+        image_bytes = file.read()
+        img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        img = img_transform(img).unsqueeze(0).to(DEVICE)
+
+        # Inference
+        with torch.no_grad():
+            outputs = classifier_model(img)
+            probs = torch.softmax(outputs, dim=1)[0]
+            conf, pred_idx = torch.max(probs, 0)
+
+        label = CLASSES[pred_idx.item()]
+        confidence = round(conf.item(), 4)
+
+        logger.info(f"Prediction -> {label} ({confidence})")
+        
+        return jsonify({
+            "label": label,
+            "probability": confidence
+        })
+
+    except Exception as e:
+        logger.error(f"Prediction error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     try:
