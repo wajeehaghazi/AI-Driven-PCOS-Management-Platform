@@ -7,18 +7,34 @@ export function Header() {
     setIsMenuOpen(!isMenuOpen);
   };
   // Add scroll effect
+  const [isVisible, setIsVisible] = useState(true);
+  let lastScrollY = React.useRef(0);
+
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 10) {
-        setIsScrolled(true);
-      } else {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 10) {
         setIsScrolled(false);
+        setIsVisible(true);
+      } else {
+        setIsScrolled(true);
+        setIsVisible(currentScrollY < lastScrollY.current);
       }
+      
+      lastScrollY.current = currentScrollY;
     };
-    window.addEventListener('scroll', handleScroll);
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-  return <header className={`sticky top-0 z-10 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md' : 'bg-white shadow-sm'}`}>
+  return <header className={`sticky top-0 z-10 transition-all duration-300 ${
+        isVisible 
+          ? isScrolled 
+            ? 'bg-white/95 backdrop-blur-md shadow-md translate-y-0' 
+            : 'bg-white shadow-sm translate-y-0'
+          : '-translate-y-full'
+      }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center">
