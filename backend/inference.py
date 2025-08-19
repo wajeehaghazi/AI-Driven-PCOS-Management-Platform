@@ -17,12 +17,14 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from embedding import load_embeddings
 from langchain_groq import ChatGroq
-
+from langchain_openai import ChatOpenAI
+from groq import Groq
 import torch
 import torch.nn as nn
 from torchvision import models, transforms
 from PIL import Image
 import io
+import requests
 # Configure logging
 
 def setup_logging():
@@ -107,11 +109,19 @@ load_dotenv()
 # Load environment variables
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 GROQ_API_KEY3 = os.getenv('GROQ_API_KEY3')
+groq_client = Groq(api_key=GROQ_API_KEY3)
 
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 try:
     # Set up LLM with streaming enabled
   
     llm = ChatGroq(model='llama3-8b-8192',api_key=GROQ_API_KEY3)
+#     llm = ChatOpenAI(
+#     model="gpt-4o",           # latest GPT-5 model
+#     base_url="https://api.aimlapi.com/v1",
+#     temperature=0,           # optional: controls creativity
+#     api_key=OPENAI_API_KEY   # from your env vars
+# )
     logger.info("LLM initialized successfully with streaming enabled")
     
     # Load embeddings from the embeddings module
@@ -352,6 +362,133 @@ def chat():
             'session_id': session_id,
             'chat_history': sessions.get(session_id, [])
         }), 500
+
+@app.route('/transcribe', methods=['POST'])
+@log_request_time
+def transcribe_audio():
+    """Groq Whisper transcription endpoint"""
+    try:
+        if 'file' not in request.files:
+            logger.warning("No audio file provided in transcribe request")
+            return jsonify({'error': 'No audio file provided', 'success': False}), 400
+
+        audio_file = request.files['file']
+        if audio_file.filename == '':
+            logger.warning("Empty filename in transcribe request")
+            return jsonify({'error': 'No audio file selected', 'success': False}), 400
+
+        logger.info(f"Transcribe request received - File: {audio_file.filename}")
+        audio_file.seek(0)
+        
+        transcription = groq_client.audio.transcriptions.create(
+            file=(audio_file.filename, audio_file.read(), audio_file.content_type),
+            model="whisper-large-v3",
+            response_format="text",
+            language="en"
+        )
+        
+        transcription_text = transcription.strip() if transcription else ""
+        short = (transcription_text[:100] + '...') if len(transcription_text) > 100 else transcription_text
+        logger.info(f"Groq Whisper transcription result: {short}")
+        # asr_logger.info(f"File: {audio_file.filename} | Transcription: {transcription_text}")
+
+        return jsonify({
+            'transcription': transcription_text, 
+            'success': True,
+            'audio_filename': audio_file.filename
+        })
+
+    except Exception as e:
+        logger.error(f"Error in transcribe endpoint: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'error': 'Internal transcription error', 'success': False}), 500
+
+@app.route('/tts', methods=['POST'])
+@log_request_time
+def text_to_speech():
+    """Groq TTS endpoint using PlayAI via HTTP"""
+    try:
+        data = request.get_json()
+        if not data or 'text' not in data:
+            logger.warning("No text provided in TTS request")
+            return jsonify({'error': 'No text provided', 'success': False}), 400
+
+        text = data['text']
+        session_id = data.get('session_id', str(uuid.uuid4()))
+        language = data.get('language', 'en')  # Default to English
+
+        if not text:
+            logger.warning(f"Empty text input received for session: {session_id}")
+            return jsonify({'error': 'Empty text input', 'success': False}), 400
+
+        if len(text) > 10000:
+            logger.warning(f"Text input exceeds 10K characters for session: {session_id}")
+            return jsonify({'error': 'Text input exceeds 10,000 character limit', 'success': False}), 400
+
+        logger.info(f"TTS request received - Session ID: {session_id}, Text: {text[:100]}...")
+
+        # Select model and voice based on language
+        model = "playai-tts" if language == 'en' else "playai-tts-arabic"
+        voice = "Adelaide-PlayAI" if language == 'en' else "Ahmad-PlayAI"
+
+        if language == 'ur':
+            logger.warning(f"Urdu TTS not supported, falling back to English for session: {session_id}")
+            model = "playai-tts"
+            voice = "Adelaide-PlayAI"
+            text = f"Urdu is not supported for text-to-speech. The response will be in English: {text}"
+
+        try:
+            # Make HTTP request to Groq TTS API
+            headers = {
+                'Authorization': f'Bearer {GROQ_API_KEY3}',
+                'Content-Type': 'application/json'
+            }
+            payload = {
+                'model': model,
+                'voice': voice,
+                'input': text,
+                'response_format': 'wav'
+            }
+            response = requests.post(
+                'https://api.groq.com/openai/v1/audio/speech',
+                headers=headers,
+                json=payload
+            )
+
+            if response.status_code != 200:
+                error_msg = response.text
+                logger.error(f"Groq TTS API error: {response.status_code} - {error_msg}")
+                # tts_logger.error(f"Session: {session_id} | Error: {response.status_code} - {error_msg}")
+                return jsonify({'error': f'TTS generation failed: {error_msg}', 'success': False}), 500
+
+            # Save audio to a BytesIO buffer
+            audio_buffer = io.BytesIO(response.content)
+            audio_buffer.seek(0)
+
+            # Log TTS request
+            # tts_logger.info(f"Session: {session_id} | Text: {text[:100]}... | Model: {model} | Voice: {voice}")
+
+            return Response(
+                audio_buffer,
+                mimetype='audio/wav',
+                headers={
+                    'Content-Disposition': f'attachment; filename=tts_output_{session_id}.wav',
+                    'Cache-Control': 'no-cache',
+                    'Access-Control-Allow-Origin': '*'
+                }
+            )
+
+        except Exception as groq_error:
+            logger.error(f"Groq TTS API error: {str(groq_error)}")
+            # tts_logger.error(f"Session: {session_id} | Error: {str(groq_error)}")
+            return jsonify({'error': f'TTS generation failed: {str(groq_error)}', 'success': False}), 500
+
+    except Exception as e:
+        logger.error(f"Error in TTS endpoint: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # tts_logger.error(f"Session: {session_id} | Error: {str(e)}")
+        return jsonify({'error': 'Internal TTS error', 'success': False}), 500
+
 
 MODEL_PATH = "pcos_classifier_resnet50.pth"   # <-- make sure this file exists
 CLASSES = ["infected", "noninfected"]
