@@ -97,13 +97,8 @@ def log_request_time(f):
     return decorated_function
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/chat": {
-        "origins": ["http://localhost:5173"],
-        "methods": ["POST"],
-        "allow_headers": ["Content-Type"]
-    }
-})
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 logger.info("=" * 50)
 logger.info("STARTING PITB CHATBOT APPLICATION")
 logger.info("=" * 50)
