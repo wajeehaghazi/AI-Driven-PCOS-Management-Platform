@@ -2,8 +2,12 @@ import React from 'react';
 import { UltrasoundAnalysis } from '../components/UltrasoundAnalysis';
 import { SymptomAssessment } from '../components/SymptomAssessment';
 import { ChevronDownIcon, ActivityIcon, BrainIcon, HeartIcon, SparklesIcon, ShieldIcon } from 'lucide-react';
+import { Header } from '../components/Header';
+import { Footer } from '../components/Footer';
 export function LandingPage() {
-  return <div className="w-full">
+  return <div className="w-full flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <Header />
+      <main className="flex-grow">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-r from-teal-600 via-blue-500 to-cyan-600 text-white py-24">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?ixlib=rb-4.0.3&auto=format&fit=crop&q=80')] opacity-10 bg-cover bg-center"></div>
@@ -31,9 +35,9 @@ export function LandingPage() {
                 assessment, monitoring, and treatment recommendations.
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
-                <button className="px-8 py-4 bg-white text-teal-600 rounded-xl font-medium hover:bg-blue-50 hover:scale-105 transition-all duration-300 shadow-lg shadow-teal-700/20">
+                <a href="#analysis" className="px-8 py-4 bg-white text-teal-600 rounded-xl font-medium hover:bg-blue-50 hover:scale-105 transition-all duration-300 shadow-lg shadow-teal-700/20">
                   Get Started
-                </button>
+                </a>
                 <button className="px-8 py-4 bg-transparent border-2 border-white rounded-xl font-medium hover:bg-white/10 hover:scale-105 transition-all duration-300">
                   Learn More
                 </button>
@@ -137,7 +141,7 @@ export function LandingPage() {
         </div>
       </section>
       {/* Ultrasound Analysis Section */}
-      <section id="analysis" className="py-24 bg-gradient-to-b from-blue-50 to-white">
+      <section id="analysis" className="py-24 bg-gradient-to-b from-blue-50 to-white scroll-mt-24">
         <UltrasoundAnalysis />
       </section>
       {/* Symptom Assessment Section */}
@@ -189,5 +193,7 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+      </main>
+      <Footer />
     </div>;
 }

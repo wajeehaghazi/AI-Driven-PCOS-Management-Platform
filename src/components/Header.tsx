@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MenuIcon, XIcon } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -9,6 +10,9 @@ export function Header() {
   // Add scroll effect
   const [isVisible, setIsVisible] = useState(true);
   let lastScrollY = React.useRef(0);
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+  const isAtHomeTesting = location.pathname.startsWith('/at-home-testing');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,6 +57,9 @@ export function Header() {
           </div>
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-4">
+              <Link to="/" className={`px-3 py-2 text-sm font-medium transition-colors ${isHome ? 'text-teal-700 border-b-2 border-teal-500' : 'text-gray-700 hover:text-teal-600'}`} aria-current={isHome ? 'page' : undefined}>
+                Home
+              </Link>
               <a href="#features" className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors">
                 Features
               </a>
@@ -65,6 +72,9 @@ export function Header() {
               <a href="#treatment" className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors">
                 Treatment Plans
               </a>
+              <Link to="/at-home-testing" className={`px-3 py-2 text-sm font-medium transition-colors ${isAtHomeTesting ? 'text-teal-700 border-b-2 border-teal-500' : 'text-gray-700 hover:text-teal-600'}`} aria-current={isAtHomeTesting ? 'page' : undefined}>
+                At-Home Testing
+              </Link>
               <button className="ml-4 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-500 to-blue-500 rounded-lg hover:from-teal-600 hover:to-blue-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
                 Sign In
               </button>
@@ -79,6 +89,9 @@ export function Header() {
       </div>
       {isMenuOpen && <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gradient-to-b from-white to-gray-50">
+            <Link to="/" className={`block px-3 py-2 text-base font-medium rounded-md transition-colors ${isHome ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-100'}`} aria-current={isHome ? 'page' : undefined}>
+              Home
+            </Link>
             <a href="#features" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-100 rounded-md transition-colors">
               Features
             </a>
@@ -91,6 +104,9 @@ export function Header() {
             <a href="#treatment" className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-teal-600 hover:bg-gray-100 rounded-md transition-colors">
               Treatment Plans
             </a>
+            <Link to="/at-home-testing" className={`block px-3 py-2 text-base font-medium rounded-md transition-colors ${isAtHomeTesting ? 'text-teal-700 bg-teal-50' : 'text-gray-700 hover:text-teal-600 hover:bg-gray-100'}`} aria-current={isAtHomeTesting ? 'page' : undefined}>
+              At-Home Testing
+            </Link>
             <button className="mt-3 w-full px-5 py-3 text-base font-medium text-white bg-gradient-to-r from-teal-500 to-blue-500 rounded-lg hover:from-teal-600 hover:to-blue-600 transition-all duration-300 shadow-md">
               Sign In
             </button>
