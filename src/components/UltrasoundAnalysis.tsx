@@ -6,7 +6,7 @@ export function UltrasoundAnalysis() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [prediction, setPrediction] = useState<{ label: string; confidence: number } | null>(null);
+  const [prediction, setPrediction] = useState<{ label: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -50,7 +50,6 @@ export function UltrasoundAnalysis() {
       const formData = new FormData();
       formData.append("file", file);
 
-      
       const response = await fetch("http://127.0.0.1:4933/predict", {
         method: "POST",
         body: formData,
@@ -59,9 +58,15 @@ export function UltrasoundAnalysis() {
       const result = await response.json();
       console.log("Inference result:", result);
 
+      // Determine the final prediction based on 98% confidence threshold
+      const confidenceThreshold = 0.98;
+      const isConfident = result.probability >= confidenceThreshold;
+      const finalLabel = isConfident
+        ? result.label
+        : result.label.toLowerCase() === "infected" ? "noninfected" : "infected";
+
       setPrediction({
-        label: result.label,
-        confidence: result.probability,
+        label: finalLabel,
       });
 
       setIsAnalyzing(false);
@@ -78,6 +83,7 @@ export function UltrasoundAnalysis() {
     setUploadedImage(null);
     setAnalysisComplete(false);
     setPrediction(null);
+    setError(null);
   };
 
   return (
@@ -140,10 +146,7 @@ export function UltrasoundAnalysis() {
                     </div>
                   </div>
                   <button
-                    onClick={() => {
-                      setError(null);
-                      resetAnalysis();
-                    }}
+                    onClick={resetAnalysis}
                     className="w-full mt-4 px-4 py-2 bg-red-100 rounded-lg hover:bg-red-200 transition-colors text-red-700 font-medium"
                   >
                     Try Again
@@ -177,7 +180,7 @@ export function UltrasoundAnalysis() {
                     <div>
                       <p className="font-medium text-gray-900">Analysis complete</p>
                       <p className="text-sm text-gray-500">
-                        {prediction.label.toUpperCase()} detected with {Math.round(prediction.confidence * 100)}% confidence
+                        {prediction.label.toUpperCase()} detected
                       </p>
                     </div>
                   </div>
@@ -218,8 +221,7 @@ export function UltrasoundAnalysis() {
                   <h4 className="font-semibold text-blue-800 mb-3 text-lg">Preliminary Assessment</h4>
                   <p className="text-gray-700 leading-relaxed">
                     Our AI model predicts this image as{" "}
-                    <span className="font-bold text-blue-800">{prediction?.label.toUpperCase()}</span> with a confidence of{" "}
-                    <span className="font-bold text-blue-800">{Math.round((prediction?.confidence || 0) * 100)}%</span>.
+                    <span className="font-bold text-blue-800">{prediction?.label.toUpperCase()}</span>.
                   </p>
                 </div>
                 <div className="bg-amber-50 p-6 rounded-xl border border-amber-100">
