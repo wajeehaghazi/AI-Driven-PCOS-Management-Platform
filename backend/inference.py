@@ -25,6 +25,9 @@ from torchvision import models, transforms
 from PIL import Image
 import io
 import requests
+import base64
+import numpy as np
+import cv2
 # Configure logging
 
 def setup_logging():
@@ -115,13 +118,13 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 try:
     # Set up LLM with streaming enabled
   
-    llm = ChatGroq(model='llama3-8b-8192',api_key=GROQ_API_KEY3)
-#     llm = ChatOpenAI(
-#     model="gpt-4o",           # latest GPT-5 model
-#     base_url="https://api.aimlapi.com/v1",
-#     temperature=0,           # optional: controls creativity
-#     api_key=OPENAI_API_KEY   # from your env vars
-# )
+    # llm = ChatGroq(model='llama3-8b-8192',api_key=GROQ_API_KEY3)
+    llm = ChatOpenAI(
+    model="openai/gpt-5-chat-latest",          
+    base_url="https://api.aimlapi.com/v1",
+    temperature=0.5,
+    api_key=OPENAI_API_KEY   
+    )
     logger.info("LLM initialized successfully with streaming enabled")
     
     # Load embeddings from the embeddings module
@@ -489,16 +492,15 @@ def text_to_speech():
         # tts_logger.error(f"Session: {session_id} | Error: {str(e)}")
         return jsonify({'error': 'Internal TTS error', 'success': False}), 500
 
-
-MODEL_PATH = "pcos_classifier_resnet50.pth"   # <-- make sure this file exists
+MODEL_PATH = "pcos_classifier_resnet50.pth"  # Ensure this file exists
 CLASSES = ["infected", "noninfected"]
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Load Model Once
 def load_classifier():
-    model = models.resnet50(pretrained=False)
+    model = models.resnet50(weights=None)  # Updated: Replaced pretrained=False with weights=None
     model.fc = nn.Linear(model.fc.in_features, len(CLASSES))
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True))  # Updated: Added weights_only=True
     model.to(DEVICE)
     model.eval()
     return model
@@ -512,6 +514,71 @@ img_transform = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406],
                          [0.229, 0.224, 0.225]),
 ])
+
+# Grad-CAM Implementation
+class GradCAM:
+    def __init__(self, model, target_layer):
+        self.model = model
+        self.target_layer = target_layer
+        self.gradients = None
+        self.activations = None
+
+        # Register hooks to capture activations and gradients
+        target_layer.register_forward_hook(self.save_activations)
+        target_layer.register_full_backward_hook(self.save_gradients)
+
+    def save_activations(self, module, input, output):
+        self.activations = output
+
+    def save_gradients(self, module, grad_input, grad_output):
+        self.gradients = grad_output[0]
+
+    def generate(self, input_image, target_class=None):
+        self.model.eval()
+        input_image.requires_grad_(True)
+
+        # Forward pass
+        output = self.model(input_image)
+        if target_class is None:
+            target_class = output.argmax(dim=1).item()
+
+        # Zero gradients
+        self.model.zero_grad()
+        # Backward pass for the target class
+        output[:, target_class].backward()
+
+        # Compute Grad-CAM
+        weights = torch.mean(self.gradients, dim=(2, 3), keepdim=True)
+        grad_cam = torch.sum(weights * self.activations, dim=1).squeeze()
+        grad_cam = torch.relu(grad_cam)
+
+        # Normalize the heatmap
+        grad_cam = grad_cam / (grad_cam.max() + 1e-8)
+
+        # Detach the tensor before converting to NumPy
+        return grad_cam.detach().cpu().numpy(), target_class
+
+def overlay_heatmap(heatmap, image, alpha=0.5):
+    # Resize heatmap to match image size
+    heatmap = cv2.resize(heatmap, (image.size[0], image.size[1]))
+    heatmap = np.uint8(255 * heatmap)
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+
+    # Convert PIL image to numpy array
+    image_np = np.array(image)
+    image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+
+    # Overlay heatmap on the original image
+    overlay = cv2.addWeighted(image_np, 1-alpha, heatmap, alpha, 0.0)
+
+    # Convert back to PIL image
+    overlay = cv2.cvtColor(overlay, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(overlay)
+
+def image_to_base64(img):
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
 @app.route("/predict", methods=["POST"])
 @log_request_time
@@ -527,29 +594,40 @@ def predict():
         # Preprocess image
         image_bytes = file.read()
         img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        img = img_transform(img).unsqueeze(0).to(DEVICE)
+        img_tensor = img_transform(img).unsqueeze(0).to(DEVICE)
 
         # Inference
         with torch.no_grad():
-            outputs = classifier_model(img)
+            outputs = classifier_model(img_tensor)
             probs = torch.softmax(outputs, dim=1)[0]
             conf, pred_idx = torch.max(probs, 0)
 
         label = CLASSES[pred_idx.item()]
         confidence = round(conf.item(), 4)
 
+        # Generate Grad-CAM heatmap
+        grad_cam = GradCAM(classifier_model, classifier_model.layer4[-1])  # Target the last conv layer
+        heatmap, target_class = grad_cam.generate(img_tensor)
+
+        # Overlay heatmap on the original image
+        heatmap_img = overlay_heatmap(heatmap, img)
+
+        # Convert heatmap image to base64
+        heatmap_base64 = image_to_base64(heatmap_img)
+
         logger.info(f"Prediction -> {label} ({confidence})")
         
         return jsonify({
             "label": label,
-            "probability": confidence
+            "probability": confidence,
+            "gradcam_heatmap": heatmap_base64
         })
 
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
         logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
-
+    
 if __name__ == '__main__':
     try:
         app.run(debug=True, host='0.0.0.0',use_reloader=False, threaded=True, port=4933)

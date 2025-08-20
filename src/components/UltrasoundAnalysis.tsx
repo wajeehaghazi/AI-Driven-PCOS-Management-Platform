@@ -1,24 +1,31 @@
 import React, { useState } from 'react';
 import { UploadIcon, AlertCircleIcon, CheckCircleIcon, ZapIcon, ImageIcon, FileTextIcon } from 'lucide-react';
 
+// Define interface for prediction result
+interface Prediction {
+  label: string;
+  probability: number;
+  gradcam_heatmap?: string;
+}
+
 export function UltrasoundAnalysis() {
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisComplete, setAnalysisComplete] = useState(false);
-  const [prediction, setPrediction] = useState<{ label: string } | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [analysisComplete, setAnalysisComplete] = useState<boolean>(false);
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
   };
 
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     setIsDragging(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -34,9 +41,9 @@ export function UltrasoundAnalysis() {
 
   const handleImageUpload = (file: File) => {
     const reader = new FileReader();
-    reader.onload = e => {
-      if (e.target?.result) {
-        setUploadedImage(e.target.result as string);
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      if (e.target?.result && typeof e.target.result === 'string') {
+        setUploadedImage(e.target.result);
         runInference(file);
       }
     };
@@ -58,8 +65,12 @@ export function UltrasoundAnalysis() {
       const result = await response.json();
       console.log("Inference result:", result);
 
-      // Determine the final prediction based on 98% confidence threshold
-      const confidenceThreshold = 0.98;
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      // Determine the final prediction based on 96% confidence threshold
+      const confidenceThreshold = 0.96;
       const isConfident = result.probability >= confidenceThreshold;
       const finalLabel = isConfident
         ? result.label
@@ -67,6 +78,8 @@ export function UltrasoundAnalysis() {
 
       setPrediction({
         label: finalLabel,
+        probability: result.probability,
+        gradcam_heatmap: result.gradcam_heatmap
       });
 
       setIsAnalyzing(false);
@@ -107,8 +120,7 @@ export function UltrasoundAnalysis() {
         <div>
           {!uploadedImage ? (
             <div
-              className={`border-3 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${isDragging ? "border-teal-500 bg-teal-50 scale-[1.02]" : "border-gray-300 hover:border-teal-400 hover:bg-teal-50/30"
-                }`}
+              className={`border-3 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${isDragging ? "border-teal-500 bg-teal-50 scale-[1.02]" : "border-gray-300 hover:border-teal-400 hover:bg-teal-50/30"}`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -199,8 +211,7 @@ export function UltrasoundAnalysis() {
 
         {/* Right Side - Results Panel */}
         <div
-          className={`rounded-2xl shadow-xl transition-all duration-500 overflow-hidden ${!analysisComplete ? "bg-gray-50 border border-gray-200 opacity-75" : "bg-white border-2 border-teal-100"
-            }`}
+          className={`rounded-2xl shadow-xl transition-all duration-500 overflow-hidden ${!analysisComplete ? "bg-gray-50 border border-gray-200 opacity-75" : "bg-white border-2 border-teal-100"}`}
         >
           <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-4 flex items-center justify-between">
             <div className="flex items-center">
@@ -224,6 +235,19 @@ export function UltrasoundAnalysis() {
                     <span className="font-bold text-blue-800">{prediction?.label.toUpperCase()}</span>.
                   </p>
                 </div>
+                {prediction?.gradcam_heatmap && (
+                  <div className="bg-purple-50 p-6 rounded-xl border border-purple-100">
+                    <h4 className="font-semibold text-purple-800 mb-3 text-lg">Grad-CAM Heatmap</h4>
+                    <p className="text-gray-700 mb-4">
+                      The heatmap highlights regions the AI model focused on for its prediction. Red areas indicate high importance, while blue areas indicate lower importance.
+                    </p>
+                    <img
+                      src={`data:image/png;base64,${prediction.gradcam_heatmap}`}
+                      alt="Grad-CAM Heatmap"
+                      className="w-full h-auto rounded-lg shadow-md"
+                    />
+                  </div>
+                )}
                 <div className="bg-amber-50 p-6 rounded-xl border border-amber-100">
                   <h4 className="font-medium text-amber-800 mb-2 text-lg">Important Note</h4>
                   <p className="text-gray-700">
