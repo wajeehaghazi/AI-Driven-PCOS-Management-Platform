@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircleIcon, SendIcon, UserIcon, BotIcon, SparklesIcon, MicIcon, PlayIcon, StopCircleIcon, Trash2Icon } from 'lucide-react';
 import ReactMarkdown from "react-markdown";
 
+// Define base URL
+const BASE_URL = 'http://127.0.0.1:4933';
+
 // Define interface for messages
 interface Message {
   sender: 'user' | 'ai';
@@ -76,7 +79,7 @@ export function SymptomAssessment() {
       const formData = new FormData();
       formData.append('file', audioBlob, 'recording.webm');
 
-      const transcriptionResponse = await fetch('http://127.0.0.1:4933/transcribe', {
+      const transcriptionResponse = await fetch(`${BASE_URL}/transcribe`, {
         method: 'POST',
         body: formData,
       });
@@ -115,7 +118,7 @@ export function SymptomAssessment() {
       formData.append('input', currentInput);
       if (sessionId) formData.append('session_id', sessionId);
 
-      const response = await fetch('http://127.0.0.1:4933/chat', {
+      const response = await fetch(`${BASE_URL}/chat`, {
         method: 'POST',
         body: formData,
         mode: 'cors',
@@ -182,7 +185,7 @@ export function SymptomAssessment() {
     } else {
       // Generate TTS
       try {
-        const response = await fetch('http://127.0.0.1:4933/tts', {
+        const response = await fetch(`${BASE_URL}/tts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, session_id: sessionId, language: 'en' })
@@ -255,7 +258,7 @@ export function SymptomAssessment() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="text-center mb-12">
         <div className="inline-flex items-center px-4 py-1.5 bg-blue-100 rounded-full text-sm font-medium text-blue-800 mb-4">
@@ -294,7 +297,7 @@ export function SymptomAssessment() {
           </div>
 
           {/* Chat container */}
-          <div className="h-[500px] overflow-y-auto p-4 bg-gradient-to-b from-blue-50 to-white">
+          <div className="h-[530px] overflow-y-auto p-4 bg-gradient-to-b from-blue-50 to-white">
             <div className="space-y-4">
               {messages.map((message, index) => (
                 <div key={index} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
