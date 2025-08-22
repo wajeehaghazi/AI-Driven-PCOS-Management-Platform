@@ -4,6 +4,7 @@ import { SymptomAssessment } from '../components/SymptomAssessment';
 import { ChevronDownIcon, ActivityIcon, BrainIcon, HeartIcon, SparklesIcon, ShieldIcon } from 'lucide-react';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { Link } from 'react-router-dom';
 export function LandingPage() {
   return <div className="w-full flex flex-col min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <Header />
@@ -169,9 +170,9 @@ export function LandingPage() {
             <button className="px-8 py-4 bg-white text-teal-600 rounded-xl font-medium hover:bg-blue-50 hover:scale-105 transition-all duration-300 shadow-lg shadow-teal-700/20">
               Sign Up Free
             </button>
-            <button className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-xl font-medium hover:bg-white/10 hover:scale-105 transition-all duration-300">
-              Schedule a Demo
-            </button>
+            <Link to="/book-appointment" className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-xl font-medium hover:bg-white/10 hover:scale-105 transition-all duration-300 inline-block">
+              Book Appointment
+            </Link>
           </div>
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="text-center">
