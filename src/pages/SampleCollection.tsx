@@ -185,33 +185,7 @@ export const SampleCollectionPage: React.FC = () => {
               location to collect the sample.
             </p>
 
-            <article className="bg-white rounded-lg shadow-sm p-4 sm:p-6 max-w-5xl mx-auto">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">
-                Sample Collection - Message
-              </h2>
-              <form
-                className="space-y-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleChatbaseSubmit();
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="Enter your message..."
-                  value={chatbaseText}
-                  onChange={(e) => setChatbaseText(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={!chatbaseText.trim()}
-                >
-                  Send Message
-                </button>
-              </form>
-            </article>
+             
           </header>
 
           <section className="max-w-5xl mx-auto mb-12 sm:mb-16">

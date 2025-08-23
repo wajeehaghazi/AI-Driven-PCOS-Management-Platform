@@ -245,40 +245,7 @@ export default function BookAppointment() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent mb-4 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-white resize-none"
               />
             </div>
-
-            <div>
-              <label htmlFor="hearAboutUs" className="block text-sm font-semibold text-gray-800 mb-4">
-                How did you hear about us?
-              </label>
-              <div className="space-y-3 mb-4">
-                {hearAboutOptions.map((option, index) => (
-                  <label
-                    key={index}
-                    className="flex items-center p-3 rounded-xl bg-white/60 hover:bg-white/80 transition-all duration-200 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name="hearAboutUs"
-                      value={option.toLowerCase().replace(" ", "-")}
-                      checked={formData.hearAboutUs === option.toLowerCase().replace(" ", "-")}
-                      onChange={handleInputChange}
-                      className="mr-3 text-teal-500 focus:ring-teal-400"
-                    />
-                    <span className="font-medium text-gray-800">{option}</span>
-                    {option === "Other" && formData.hearAboutUs === "other" && (
-                      <input
-                        type="text"
-                        name="hearAboutUsOther"
-                        value={formData.hearAboutUsOther}
-                        onChange={handleInputChange}
-                        placeholder="Please specify"
-                        className="ml-3 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-400 focus:border-transparent bg-white/80"
-                      />
-                    )}
-                  </label>
-                ))}
-              </div>
-            </div>
+ 
           </div>
 
           <div className="text-center pt-8">
