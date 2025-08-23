@@ -68,13 +68,13 @@ export function Header() {
               <a href="#assessment" className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors">
                 Symptom Assessment
               </a>
-              <Link to="/book-appointment" className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors">
-                Book Appointment
+              <Link to="/sample-collection" className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors">
+                Sample Collection
               </Link>
               
-              <button className="ml-4 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-500 to-blue-500 rounded-lg hover:from-teal-600 hover:to-blue-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                Sign In
-              </button>
+              <Link to={'/book-appointment'} className="ml-4 px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-teal-500 to-blue-500 rounded-lg hover:from-teal-600 hover:to-blue-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                Book Appointment
+              </Link>
             </div>
           </div>
           <div className="md:hidden">
