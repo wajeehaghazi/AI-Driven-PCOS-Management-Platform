@@ -210,9 +210,6 @@ try:
     "{context}"
 )
 
-
-
-
     qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", system_prompt),
