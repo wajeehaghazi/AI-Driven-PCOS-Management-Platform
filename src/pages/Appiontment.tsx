@@ -77,7 +77,6 @@ export default function BookAppointment() {
     "Symptom Assessment and Risk Evaluation",
   ]
 
-  const hearAboutOptions = ["Social Media", "Word of Mouth", "Search Engine", "Referral", "Other"]
 
   return (
     <>

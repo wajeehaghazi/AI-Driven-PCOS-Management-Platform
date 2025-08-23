@@ -108,34 +108,12 @@ export const SampleCollectionPage: React.FC = () => {
     agreedToTerms: false,
   });
 
-  const [chatbaseText, setChatbaseText] = useState("");
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleChatbaseSubmit = async () => {
-    if (!chatbaseText.trim()) return;
-
-    const testUrl = "https://jsonplaceholder.typicode.com/posts";
-
-    try {
-      const response = await fetch(testUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: chatbaseText }),
-      });
-
-      if (response.ok) {
-        alert("Message sent to chatbase successfully!");
-        setChatbaseText("");
-      }
-    } catch (error) {
-      alert("Error sending message. Please try again.");
-    }
-  };
+ 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
