@@ -3,7 +3,7 @@ import { MessageCircleIcon, SendIcon, UserIcon, BotIcon, SparklesIcon, MicIcon, 
 import ReactMarkdown from "react-markdown";
 
 // Define base URL
-const BASE_URL = 'http://127.0.0.1:4933';
+const BASE_URL = 'https://203.215.173.203:4933';
 
 // Define interface for messages
 interface Message {
