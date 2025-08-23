@@ -89,7 +89,7 @@ export default function BookAppointment() {
           </h1>
           <p className="text-gray-700 text-lg leading-relaxed max-w-3xl mx-auto">
             Please fill out the form below to schedule an appointment with one of our healthcare professionals for your
-            PCOS-related concerns or tests. Our doctor will review your information and confirm your appointment
+            PCOS-related concerns or tests. Our system will review your information and confirm your appointment
             details.
           </p>
         </header>
