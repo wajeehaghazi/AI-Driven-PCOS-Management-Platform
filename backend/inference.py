@@ -105,7 +105,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 logger.info("=" * 50)
-logger.info("STARTING PITB CHATBOT APPLICATION")
+logger.info("STARTING POC CHATBOT APPLICATION")
 logger.info("=" * 50)
 
 load_dotenv()
