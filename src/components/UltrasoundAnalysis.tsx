@@ -57,7 +57,7 @@ export function UltrasoundAnalysis() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("https://cbnpgw1c-4933.inc1.devtunnels.ms/predict", {
+      const response = await fetch("/api/predict", {
         method: "POST",
         body: formData,
       });
