@@ -118,13 +118,13 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 try:
     # Set up LLM with streaming enabled
   
-    # llm = ChatGroq(model='llama3-8b-8192',api_key=GROQ_API_KEY3)
-    llm = ChatOpenAI(
-    model="openai/gpt-5-chat-latest",          
-    base_url="https://api.aimlapi.com/v1",
-    temperature=0.5,
-    api_key=OPENAI_API_KEY   
-    )
+    llm = ChatGroq(model='llama3-70b-8192',api_key=GROQ_API_KEY3)
+    # llm = ChatOpenAI(
+    # model="openai/gpt-5-chat-latest",          
+    # base_url="https://api.aimlapi.com/v1",
+    # temperature=0.5,
+    # api_key=OPENAI_API_KEY   
+    # )
     logger.info("LLM initialized successfully with streaming enabled")
     
     # Load embeddings from the embeddings module
@@ -187,7 +187,7 @@ try:
     "- For sensitive or distressing topics, respond with empathy but stay professional.\n\n"
 
     "Reminders:\n"
-    "- Your guidance complements, not replaces, medical care.\n"
+    "- Your guidance complements.\n"
     "- Always protect user privacy.\n"
     "- Stay focused on PCOS and women's health topics.\n"
     "- Be culturally sensitive and respectful.\n\n"
