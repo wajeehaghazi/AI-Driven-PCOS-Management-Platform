@@ -3,7 +3,7 @@ import { MessageCircleIcon, SendIcon, UserIcon, BotIcon, SparklesIcon, MicIcon, 
 import ReactMarkdown from "react-markdown";
 
 // Define base URL
-const BASE_URL = 'https://cbnpgw1c-4933.inc1.devtunnels.ms';
+const BASE_URL = '/api';
 
 // Define interface for messages
 interface Message {
