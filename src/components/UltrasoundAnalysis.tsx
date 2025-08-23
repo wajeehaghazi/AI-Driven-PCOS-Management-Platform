@@ -57,7 +57,7 @@ export function UltrasoundAnalysis() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("http://127.0.0.1:4933/predict", {
+      const response = await fetch("/api/predict", {
         method: "POST",
         body: formData,
       });
