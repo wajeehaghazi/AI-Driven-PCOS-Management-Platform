@@ -1,264 +1,164 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { Header } from "../components/Header"
 import { Footer } from "../components/Footer"
 
-export default function BookAppointment() {
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    appointmentDateTime: "",
-    consultationType: "",
-    reason: "",
-    services: [] as string[],
-    additionalNotes: "",
-    hearAboutUs: "",
-    hearAboutUsOther: "",
-  })
+type ChatMsg = { role: "user" | "agent"; content: string }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+const WEBHOOK_URL = "https://000beea875c7.ngrok-free.app/webhook/pco" // ← fixed webhook URL
 
-  const handleServiceChange = (service: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      services: checked ? [...prev.services, service] : prev.services.filter((s) => s !== service),
-    }))
-  }
+// Extract the most readable text from any JSON your agent returns
+function extractText(payload: unknown): string {
+  if (payload == null) return ""
+  if (typeof payload === "string") return payload
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    const appointmentData = {
-      ...formData,
-      submittedAt: new Date().toISOString(),
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const t = extractText(item)
+      if (t) return t
     }
+    return JSON.stringify(payload, null, 2)
+  }
+
+  if (typeof payload === "object") {
+    const obj = payload as Record<string, unknown>
+
+    // Common keys your agent/workflow may use
+    const PREFERRED_KEYS = ["output", "reply", "message", "text", "content", "result"]
+    for (const k of PREFERRED_KEYS) {
+      const v = obj[k]
+      if (typeof v === "string" && v.trim()) return v
+    }
+
+    // Fallback: first string value anywhere
+    for (const v of Object.values(obj)) {
+      const t = extractText(v)
+      if (t) return t
+    }
+    return JSON.stringify(payload, null, 2)
+  }
+
+  return String(payload)
+}
+
+export default function BookAppointment() {
+  const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [history, setHistory] = useState<ChatMsg[]>([])
+  const outRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    outRef.current?.scrollTo({ top: outRef.current.scrollHeight, behavior: "smooth" })
+  }, [history, loading])
+
+  const canSend = useMemo(() => !loading && input.trim().length > 0, [loading, input])
+
+  async function sendMessage(e?: React.FormEvent) {
+    e?.preventDefault()
+    if (!canSend) return
+
+    const text = input.trim()
+    setHistory((h) => [...h, { role: "user", content: text }])
+    setInput("")
+    setLoading(true)
 
     try {
-      const response = await fetch("https://api.test-appointment.com/submit", {
+      const r = await fetch(WEBHOOK_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(appointmentData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
       })
 
-      if (response.ok) {
-        alert("Appointment request submitted successfully!")
-        // Reset form
-        setFormData({
-          fullName: "",
-          email: "",
-          phone: "",
-          appointmentDateTime: "",
-          consultationType: "",
-          reason: "",
-          services: [],
-          additionalNotes: "",
-          hearAboutUs: "",
-          hearAboutUsOther: "",
-        })
+      const ctype = r.headers.get("content-type") || ""
+      let agentText = ""
+
+      if (ctype.includes("application/json")) {
+        const data = await r.json()
+        agentText = extractText(data) || "(empty response)"
+      } else {
+        const raw = await r.text()
+        try {
+          agentText = extractText(JSON.parse(raw))
+        } catch {
+          agentText = raw || "(empty response)"
+        }
       }
-    } catch (error) {
-      console.error("Error submitting form:", error)
-      alert("Error submitting form. Please try again.")
+
+      setHistory((h) => [...h, { role: "agent", content: agentText }])
+    } catch (err: any) {
+      setHistory((h) => [
+        ...h,
+        { role: "agent", content: "Error contacting webhook: " + (err?.message || String(err)) },
+      ])
+    } finally {
+      setLoading(false)
     }
   }
-
-  const services = [
-    "PCOS Diagnosis and Evaluation",
-    "AI-Powered Ultrasound Analysis",
-    "Personalized Treatment and Lifestyle Recommendations",
-    "Symptom Assessment and Risk Evaluation",
-  ]
-// from-teal-600 via-blue-500 to-cyan-600
 
   return (
     <>
-    <Header/>
-    <main className="min-h-screen bg-gradient-to-r from-teal-600 via-blue-500 to-cyan-600 py-12 px-4">
-      <section className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
-        <header className="text-center mb-10">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent mb-6">
-            Appointment Request Form for PCOS Consultation
-          </h1>
-          <p className="text-gray-700 text-lg leading-relaxed max-w-3xl mx-auto">
-            Please fill out the form below to schedule an appointment with one of our healthcare professionals for your
-            PCOS-related concerns or tests. Our system will review your information and confirm your appointment
-            details.
-          </p>
-        </header>
+      <Header />
+      <main className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-400 to-blue-500 py-12 px-4">
+        <section className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
+          <header className="text-center mb-8">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent mb-3">
+              Appointment Request
+            </h1>
+            <p className="text-gray-700 max-w-2xl mx-auto">
+            </p>
+          </header>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-semibold text-gray-800 mb-2">
-                Full Name:
-              </label>
-              <input
-                type="text"
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent mb-4 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-white"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-2">
-                Email Address:
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent mb-4 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-white"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-gray-800 mb-2">
-                Phone Number:
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent mb-4 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-white"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="appointmentDateTime" className="block text-sm font-semibold text-gray-800 mb-2">
-                Preferred Date and Time for Appointment:
-              </label>
-              <input
-                type="datetime-local"
-                id="appointmentDateTime"
-                name="appointmentDateTime"
-                value={formData.appointmentDateTime}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent mb-4 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-white"
-              />
-            </div>
-
-            <div>
-              <p className="block text-sm font-semibold text-gray-800 mb-4">Preferred Consultation Type:</p>
-              <p className="text-sm text-gray-600 mb-4">Please select the consultation type you prefer:</p>
-              <div className="space-y-3 mb-4">
-                <label className="flex items-center p-3 rounded-xl bg-white/60 hover:bg-white/80 transition-all duration-200 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="consultationType"
-                    value="in-person"
-                    checked={formData.consultationType === "in-person"}
-                    onChange={handleInputChange}
-                    className="mr-3 text-teal-500 focus:ring-teal-400"
-                  />
-                  <span className="font-medium text-gray-800">In-person Consultation</span>
-                </label>
-                <label className="flex items-center p-3 rounded-xl bg-white/60 hover:bg-white/80 transition-all duration-200 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="consultationType"
-                    value="virtual"
-                    checked={formData.consultationType === "virtual"}
-                    onChange={handleInputChange}
-                    className="mr-3 text-teal-500 focus:ring-teal-400"
-                  />
-                  <span className="font-medium text-gray-800">Virtual Consultation (Video/Phone Call)</span>
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="reason" className="block text-sm font-semibold text-gray-800 mb-2">
-                Reason for Appointment:
-              </label>
-              <p className="text-sm text-gray-600 mb-2">
-                Please briefly describe the reason you're seeking an appointment. (e.g., symptoms, concerns, testing,
-                etc.)
-              </p>
-              <textarea
-                id="reason"
-                name="reason"
-                value={formData.reason}
-                onChange={handleInputChange}
-                required
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent mb-4 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-white resize-none"
-              />
-            </div>
-
-            <div>
-              <p className="block text-sm font-semibold text-gray-800 mb-4">
-                Which service(s) would you like to discuss during your appointment?
-              </p>
-              <p className="text-sm text-gray-600 mb-4">Please select the relevant services for your consultation:</p>
-              <div className="space-y-3 mb-4">
-                {services.map((service, index) => (
-                  <label
-                    key={index}
-                    className="flex items-start p-3 rounded-xl bg-white/60 hover:bg-white/80 transition-all duration-200 cursor-pointer"
+          {/* Transcript */}
+          <div ref={outRef} className="h-80 overflow-y-auto rounded-xl border border-gray-200 p-4 bg-white/70">
+            {history.length === 0 && (
+              <div className="text-gray-500 text-sm">No messages yet. Send something to your booking agent…</div>
+            )}
+            <div className="space-y-4">
+              {history.map((m, i) => (
+                <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[80%] whitespace-pre-wrap break-words px-4 py-3 rounded-2xl shadow-sm ${m.role === "user"
+                      ? "bg-gradient-to-r from-teal-500 to-blue-500 text-white"
+                      : "bg-white border border-gray-200 text-gray-800"
+                      }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={formData.services.includes(service)}
-                      onChange={(e) => handleServiceChange(service, e.target.checked)}
-                      className="mr-3 mt-1 flex-shrink-0 text-teal-500 focus:ring-teal-400 rounded"
-                    />
-                    <span className="text-sm font-medium text-gray-800">{service}</span>
-                  </label>
-                ))}
-              </div>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="px-4 py-3 rounded-2xl bg-white border border-gray-200 text-gray-600">Thinking…</div>
+                </div>
+              )}
             </div>
-
-            <div>
-              <label htmlFor="additionalNotes" className="block text-sm font-semibold text-gray-800 mb-2">
-                Additional Notes or Questions:
-              </label>
-              <p className="text-sm text-gray-600 mb-2">
-                If you have any specific questions or additional information you'd like to share, please provide it
-                here:
-              </p>
-              <textarea
-                id="additionalNotes"
-                name="additionalNotes"
-                value={formData.additionalNotes}
-                onChange={handleInputChange}
-                rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent mb-4 bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-white resize-none"
-              />
-            </div>
- 
           </div>
 
-          <div className="text-center pt-8">
+          {/* Input */}
+          <form onSubmit={sendMessage} className="mt-6 flex gap-3">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder='e.g., "Book Sarah on 2025-08-24 14:00, email…, phone…"'
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-400 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all duration-200 hover:bg-white"
+            />
             <button
               type="submit"
-              className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 text-white font-semibold py-4 px-12 rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              disabled={!canSend}
+              className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 disabled:opacity-60 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg"
             >
-              Submit Appointment Request
+              Send
             </button>
+          </form>
+
+          <div className="text-xs text-gray-500 mt-3">
+            {/* <code>{`{ "output": "..." }`}</code>. */}
           </div>
-        </form>
-      </section>
-    </main>
-    <Footer/>
+        </section>
+      </main>
+      <Footer />
     </>
   )
 }
