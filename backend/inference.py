@@ -118,13 +118,12 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 try:
     # Set up LLM with streaming enabled
   
-    llm = ChatGroq(model='llama3-70b-8192',api_key=GROQ_API_KEY3)
-    # llm = ChatOpenAI(
-    # model="openai/gpt-5-chat-latest",          
-    # base_url="https://api.aimlapi.com/v1",
-    # temperature=0.5,
-    # api_key=OPENAI_API_KEY   
-    # )
+    llm = ChatOpenAI(
+    model="openai/gpt-5-chat-latest",          
+    base_url="https://api.aimlapi.com/v1",
+    temperature=0.5,
+    api_key=OPENAI_API_KEY   
+    )
     logger.info("LLM initialized successfully with streaming enabled")
     
     # Load embeddings from the embeddings module
