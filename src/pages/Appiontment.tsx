@@ -76,12 +76,12 @@ export default function BookAppointment() {
     "Personalized Treatment and Lifestyle Recommendations",
     "Symptom Assessment and Risk Evaluation",
   ]
-
+// from-teal-600 via-blue-500 to-cyan-600
 
   return (
     <>
     <Header/>
-    <main className="min-h-screen bg-gradient-to-br from-teal-500 via-teal-400 to-blue-500 py-12 px-4">
+    <main className="min-h-screen bg-gradient-to-r from-teal-600 via-blue-500 to-cyan-600 py-12 px-4">
       <section className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-white/20">
         <header className="text-center mb-10">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent mb-6">
